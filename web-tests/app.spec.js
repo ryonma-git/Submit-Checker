@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { resolve, extname } from 'node:path';
 const start = async (page, name = '漢字ノート', count = '30') => {
   await page.locator('#assignment').fill(name); await page.locator('#count').selectOption(count);
   await page.getByRole('button', { name: '提出チェックを始める' }).click();
@@ -70,12 +73,26 @@ test('iPadは40人の番号が画面内に収まる', async ({ page }) => {
     const first = await page.locator('.seat').first().boundingBox(); expect(first.width).toBeGreaterThanOrEqual(44);
   }
 });
-test('オフラインで開き直して保存できる', async ({ page, context }) => {
-  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await start(page); await page.getByRole('button', { name: '1番 未提出', exact: true }).click();
-  await expect(page.locator('#submitted-count')).toHaveText('1');
-  await page.reload(); await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-  await context.setOffline(true); await page.reload();
-  await page.locator('.record-card').first().click(); await expect(page.locator('#submitted-count')).toHaveText('1');
-  await page.getByRole('button', { name: '2番 未提出', exact: true }).click(); await expect(page.locator('#submitted-count')).toHaveText('2');
+test('オフラインで開き直して保存できる', async ({ page }) => {
+  // Stop a dedicated origin instead of setOffline: WebKit 2359 has upstream issue #42775.
+  const server = createServer(async (request, response) => {
+    try {
+      const path = new URL(request.url, 'http://localhost').pathname;
+      const file = resolve('web', path === '/' ? 'index.html' : path.slice(1));
+      response.setHeader('Content-Type', ({ '.js': 'text/javascript', '.html': 'text/html', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' })[extname(file)] || 'application/json');
+      response.end(await readFile(file));
+    } catch { response.writeHead(404); response.end(); }
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+    await start(page); await page.getByRole('button', { name: '1番 未提出', exact: true }).click();
+    await expect(page.locator('#submitted-count')).toHaveText('1');
+    await page.reload(); await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
+    const response = await page.reload(); expect(response.fromServiceWorker()).toBe(true);
+    await page.locator('.record-card').first().click(); await expect(page.locator('#submitted-count')).toHaveText('1');
+    await page.getByRole('button', { name: '2番 未提出', exact: true }).click(); await expect(page.locator('#submitted-count')).toHaveText('2');
+  } finally { server.closeAllConnections(); server.close(); }
 });
