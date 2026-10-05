@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#225e50"><meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="番号をタップして、宿題の提出をさっと確認。名簿なしで使える、先生のための提出チェッカー。">
+  <title>提出チェッカー</title><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="./" aria-label="提出チェッカー ホーム"><span class="brand-icon">✓</span><span>提出チェッカー<small>CLASSROOM TOOLS</small></span></a>
+      <nav aria-label="メインメニュー"><button id="nav-home" class="nav-item active"><span aria-hidden="true">▦</span> 提出チェック</button><button id="nav-history" class="nav-item"><span aria-hidden="true">◷</span> 保存した記録 <span id="record-badge" class="badge">0</span></button></nav>
+      <div class="sidebar-bottom"><div class="privacy-icon" aria-hidden="true">⌂</div><strong>この端末に、記録します。</strong><p>名簿なし、出席番号だけで。<br>提出データは外部へ送信しません。</p><button id="backup" class="text-button">バックアップを書き出す ↗</button><button id="restore" class="text-button">バックアップを読み込む</button><input id="restore-file" type="file" accept=".json,application/json" hidden></div>
+      <span class="version">SUBMIT CHECKER · v1.0</span>
+    </aside>
+    <main>
+      <header class="topbar"><span id="breadcrumb">ホーム <span>/</span> 提出チェック</span><span class="local-label"><i></i> 端末内に保存</span></header>
+      <div id="error" class="error" role="alert" hidden></div>
+      <section id="home-view" class="view">
+        <div class="page-intro"><span class="eyebrow">READY FOR CLASS</span><h1>提出チェックを、<br class="mobile-break">もっとかんたんに。</h1><p>クラスと課題を選んだら、番号をタップするだけ。</p></div>
+        <div class="home-columns">
+          <form id="setup-form" class="panel setup-panel">
+            <div class="panel-heading"><span class="step-icon">01</span><div><h2>チェックの準備</h2><p>今日の提出物を設定しましょう。</p></div></div>
+            <fieldset><legend>クラス</legend><div class="class-fields"><label><span class="sr-only">学年</span><select id="grade" aria-label="学年"></select></label><label><span class="sr-only">組</span><select id="class-number" aria-label="組"></select></label></div></fieldset>
+            <div class="field"><div class="label-row"><label for="date">提出日</label><button id="today" class="text-button" type="button">今日にする</button></div><input id="date" type="date" required></div>
+            <div class="field"><label for="assignment">課題名</label><input id="assignment" list="assignments" maxlength="100" placeholder="課題を選ぶ、または入力" required autocomplete="off"><datalist id="assignments"></datalist><p class="field-hint">新しい課題名も、そのまま入力できます。</p></div>
+            <div class="field"><label for="count">クラスの人数</label><div class="count-line"><select id="count" aria-label="クラスの人数"></select><span>出席番号 1〜<b id="count-label">30</b> 番</span></div></div>
+            <button class="primary start-button" type="submit">提出チェックを始める <span aria-hidden="true">→</span></button>
+            <p class="form-note">同じクラス・提出日・課題の記録は、続きから開きます。</p>
+          </form>
+          <div class="home-aside"><div class="preview-panel"><div class="preview-top"><span class="mini-pill">名簿なしで、すぐに使える</span><span class="spark" aria-hidden="true">✧</span></div><h2>集まったら、<br>ぽん、とチェック。</h2><div class="mini-seats" aria-hidden="true"><span>01</span><span class="done">02<small>✓</small></span><span>03</span><span class="done">04<small>✓</small></span><span class="done">05<small>✓</small></span><span>06</span><span>07</span><span>08</span><span class="done">09<small>✓</small></span></div><div class="preview-caption"><span class="dot"></span> 提出済みが、ひと目でわかる。</div></div><div class="howto"><span>使い方は、3ステップ</span><ol><li><b>1</b>クラスと課題を選ぶ</li><li><b>2</b>提出した人の番号をタップ</li><li><b>3</b>記録を保存・CSVで書き出す</li></ol></div></div>
+        </div>
+        <section class="recent-section"><div class="section-title"><h2>最近の記録</h2><button id="see-all" class="text-button">すべて見る →</button></div><div id="recent-list"></div></section>
+      </section>
+      <section id="check-view" class="view" hidden>
+        <button id="back" class="text-button back-button">← 設定に戻る</button>
+        <div class="check-heading"><div><div class="eyebrow" id="check-meta"></div><h1 id="check-title"></h1></div><button id="export-current" class="secondary">↓ CSVを書き出す</button></div>
+        <div class="summary-panel"><div class="progress-count"><strong id="submitted-count">0</strong><span>/ <span id="total-count">30</span> 人 提出済み</span></div><div class="progress-track"><div id="progress-bar"></div></div><span id="remaining" class="remaining"></span><span id="saved-state" class="saved-state" role="status">✓ 保存済み</span></div>
+        <div class="board-toolbar"><div class="segmented" aria-label="表示対象"><button id="show-all" class="selected" aria-pressed="true">全員</button><button id="show-missing" aria-pressed="false">未提出を確認</button></div><div class="board-controls"><label for="columns">列数</label><select id="columns"><option value="auto" selected>自動</option><option value="4">4列</option><option value="5">5列</option><option value="6">6列</option><option value="8">8列</option></select><button id="undo" class="secondary" disabled>↶ ひとつ戻す</button></div></div>
+        <div class="seat-board"><div class="front-label"><span></span>黒板・教卓<span></span></div><div id="seats" class="seats" style="--columns:5"></div><p class="board-hint">番号をタップして提出済みに。もう一度タップで取り消せます。</p></div>
+        <div id="completion" class="completion" hidden>✓ 全員の提出がそろいました。おつかれさまでした！</div><p class="storage-note">このブラウザに自動保存しています。大切な記録はCSVやバックアップでも保管してください。</p>
+      </section>
+      <section id="history-view" class="view" hidden><div class="page-intro"><span class="eyebrow">YOUR RECORDS</span><h1>保存した記録</h1><p>前回の続きも、未提出の確認も、ここから。</p></div><div class="history-toolbar"><label class="search-label"><span class="sr-only">記録を検索</span><input id="search" type="search" placeholder="クラス・課題名・日付で検索"></label><button id="export-all" class="secondary">↓ 表示中の記録をCSVに</button></div><div id="history-list"></div></section>
+      <footer>毎日の「出したよ」を、ひとつずつ。</footer>
+    </main>
+  </div><div id="toast" class="toast" role="status" hidden></div>
+  <noscript>このアプリにはJavaScriptが必要です。ブラウザの設定で有効にしてください。</noscript>
+  <script type="module" src="app.js"></script>
+</body></html>

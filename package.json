@@ -1,0 +1,1 @@
+{"name":"submit-checker","version":"1.0.0","private":true,"type":"module","scripts":{"test":"node --test web-tests/core.test.js","test:e2e":"playwright test","serve":"python3 -m http.server 4173 --directory web"},"devDependencies":{"@playwright/test":"^1.56.0"}}
